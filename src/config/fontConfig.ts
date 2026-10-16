@@ -27,31 +27,48 @@ import type { FontDefinition, FontSelectionConfig } from "@/types/fontConfig";
 // 适用于 Astro Font API 的字体配置，支持自动下载、缓存和优化加载
 // 本地开发调试的情况下，修改后需要每次重启开发服务器才能生效
 export const fontsList: FontDefinition[] = [
+	// 主题字体随项目依赖安装，直接读取本地文件，避免首次构建依赖字体 CDN。
 	{
 		name: "Zen Maru Gothic",
 		cssVariable: "--font-zen-maru-gothic",
-		provider: "fontsource",
-		weights: ["300", "400", "500", "600", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		options: {
+			variants: [300, 400, 500, 700].map((weight) => ({
+				weight,
+				style: "normal",
+				src: [
+					`@fontsource/zen-maru-gothic/files/zen-maru-gothic-latin-${weight}-normal.woff2`,
+				],
+			})),
+		},
 		fallbacks: ["sans-serif"],
 	},
 	{
 		name: "Inter",
 		cssVariable: "--font-inter",
-		provider: "fontsource",
-		weights: ["300", "400", "500", "600", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		options: {
+			variants: [300, 400, 500, 600, 700].map((weight) => ({
+				weight,
+				style: "normal",
+				src: [`@fontsource/inter/files/inter-latin-${weight}-normal.woff2`],
+			})),
+		},
 		fallbacks: ["sans-serif"],
 	},
 	{
 		name: "JetBrains Mono",
 		cssVariable: "--font-jetbrains-mono",
-		provider: "fontsource",
-		weights: ["400", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		options: {
+			variants: [400, 700].map((weight) => ({
+				weight,
+				style: "normal",
+				src: [
+					`@fontsource/jetbrains-mono/files/jetbrains-mono-latin-${weight}-normal.woff2`,
+				],
+			})),
+		},
 		fallbacks: [
 			"ui-monospace",
 			"SFMono-Regular",

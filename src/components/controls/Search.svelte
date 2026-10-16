@@ -9,8 +9,8 @@ import { FLOATING_PANEL_CLOSE_EVENT } from "@/utils/floating-panel-utils";
 import { url as formatUrl, getSearchUrl } from "@/utils/url-utils";
 
 // --- State ---
-let keywordDesktop = "";
-let keywordMobile = "";
+// 两个响应式输入共享关键词，避免 Pagefind 初始化时互相取消请求。
+let keyword = "";
 let result: SearchResult[] = [];
 let isSearching = false;
 let initialized = false;
@@ -56,17 +56,12 @@ const handleDesktopFocus = (event: FocusEvent): void => {
 	)
 		return;
 
-	search(keywordDesktop, true);
+	search(keyword);
 };
 
-const setPanelVisibility = (show: boolean, isDesktop: boolean): void => {
+const setPanelVisibility = (show: boolean): void => {
 	const panel = document.getElementById("search-panel");
-	if (
-		!panel ||
-		(isDesktop && !keywordDesktop) ||
-		(!isDesktop && !keywordMobile)
-	)
-		return;
+	if (!panel || !keyword) return;
 	show
 		? panel.classList.remove("float-panel-closed")
 		: panel.classList.add("float-panel-closed");
@@ -74,8 +69,7 @@ const setPanelVisibility = (show: boolean, isDesktop: boolean): void => {
 
 const closeSearchPanel = (): void => {
 	document.getElementById("search-panel")?.classList.add("float-panel-closed");
-	keywordDesktop = "";
-	keywordMobile = "";
+	keyword = "";
 	result = [];
 };
 
@@ -92,10 +86,10 @@ const handleResultClick = (event: Event, url: string): void => {
 };
 
 // --- Core Search Logic ---
-const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
+const search = async (keyword: string): Promise<void> => {
 	if (!keyword) {
 		cancelPendingSearch();
-		setPanelVisibility(false, isDesktop);
+		setPanelVisibility(false);
 		result = [];
 		return;
 	}
@@ -121,13 +115,13 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 			if (requestId !== searchRequestId) return;
 
 			result = searchResults;
-			setPanelVisibility(true, isDesktop);
+			setPanelVisibility(true);
 		} catch (error) {
 			if (requestId !== searchRequestId) return;
 
 			console.error("Search error:", error);
 			result = [];
-			setPanelVisibility(false, isDesktop);
+			setPanelVisibility(false);
 		} finally {
 			if (requestId === searchRequestId) {
 				isSearching = false;
@@ -140,8 +134,6 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 onMount(() => {
 	const initializePagefind = () => {
 		initialized = true;
-		if (keywordDesktop) search(keywordDesktop, true);
-		if (keywordMobile) search(keywordMobile, false);
 	};
 
 	if (import.meta.env.DEV) {
@@ -174,11 +166,8 @@ onMount(() => {
 });
 
 // --- Reactive Statements ---
-$: if (initialized && (keywordDesktop || keywordDesktop === "")) {
-	search(keywordDesktop, true);
-}
-$: if (initialized && (keywordMobile || keywordMobile === "")) {
-	search(keywordMobile, false);
+$: if (initialized) {
+	search(keyword);
 }
 </script>
 
@@ -189,7 +178,7 @@ $: if (initialized && (keywordMobile || keywordMobile === "")) {
 ">
     <Icon icon="material-symbols:search"
           class="absolute text-[1.25rem] pointer-events-none ml-3 transition my-auto text-black/30 dark:text-white/30"></Icon>
-    <input id="search-input-desktop" placeholder="{i18n(I18nKey.search)}" bind:value={keywordDesktop}
+    <input id="search-input-desktop" placeholder="{i18n(I18nKey.search)}" bind:value={keyword}
            aria-controls="search-panel" data-floating-panel-no-expanded
            on:focus={handleDesktopFocus}
            class="transition-all pl-10 text-sm bg-transparent outline-0
@@ -215,7 +204,7 @@ top-20 left-4 md:left-[unset] right-4 shadow-2xl rounded-2xl p-2"
   ">
         <Icon icon="material-symbols:search"
               class="absolute text-[1.25rem] pointer-events-none ml-3 transition my-auto text-black/30 dark:text-white/30"></Icon>
-        <input placeholder={i18n(I18nKey.search)} bind:value={keywordMobile}
+        <input placeholder={i18n(I18nKey.search)} bind:value={keyword}
                on:focus={requestPagefind}
                class="pl-10 absolute inset-0 text-sm bg-transparent outline-0
                focus:w-60 text-black/50 dark:text-white/50"
@@ -259,8 +248,8 @@ top-20 left-4 md:left-[unset] right-4 shadow-2xl rounded-2xl p-2"
             </a>
         {/each}
         {#if result.length > 5}
-            <a href={getSearchUrl(keywordDesktop || keywordMobile)}
-               on:click={(e) => handleResultClick(e, getSearchUrl(keywordDesktop || keywordMobile))}
+            <a href={getSearchUrl(keyword)}
+               on:click={(e) => handleResultClick(e, getSearchUrl(keyword))}
                class="transition first-of-type:mt-2 lg:first-of-type:mt-0 group block rounded-xl text-lg px-3 py-2 hover:bg-(--btn-plain-bg-hover) active:bg-(--btn-plain-bg-active) text-(--primary) font-bold text-center">
                 <span class="inline-flex items-center">
                     {i18n(I18nKey.searchViewMore).replace('{count}', (result.length - 5).toString())}
@@ -272,7 +261,7 @@ top-20 left-4 md:left-[unset] right-4 shadow-2xl rounded-2xl p-2"
         <div class="transition first-of-type:mt-2 lg:first-of-type:mt-0 block rounded-xl text-lg px-3 py-2 text-50">
             {i18n(I18nKey.searchNoResults)}
         </div>
-    {:else if keywordDesktop || keywordMobile}
+    {:else if keyword}
         <div class="transition first-of-type:mt-2 lg:first-of-type:mt-0 block rounded-xl text-lg px-3 py-2 text-50">
             {i18n(I18nKey.searchTypeSomething)}
         </div>
